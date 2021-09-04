@@ -23,7 +23,7 @@ import {ethers} from 'ethers';
 import Clipboard from '@react-native-clipboard/clipboard';
 
 export const NewWallet = ({navigation}) => {
-  const [mnemonic, setMnemonic] = useState<string>();
+  const [mnemonic, setMnemonic] = useState<string>('');
   const [arrayWords, setArrayWords] = useState<string[]>();
   const [copiedText, setCopiedText] = useState('');
   const [generateDisabled, setGenerateDisabled] = useState(false);
@@ -46,7 +46,7 @@ export const NewWallet = ({navigation}) => {
   }, []);
 
   const _copy = () => {
-    console.log('=== copy ');
+    Clipboard.setString(mnemonic);
   };
 
   return (
