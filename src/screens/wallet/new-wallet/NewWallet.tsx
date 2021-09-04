@@ -26,20 +26,23 @@ export const NewWallet = ({navigation}) => {
   const [mnemonic, setMnemonic] = useState<string>();
   const [arrayWords, setArrayWords] = useState<string[]>();
   const [copiedText, setCopiedText] = useState('');
+  const [generateDisabled, setGenerateDisabled] = useState(false);
 
   const _regenerate = async () => {
     try {
+      setGenerateDisabled(true);
       const text = ethers.utils.entropyToMnemonic(ethers.utils.randomBytes(16));
       setMnemonic(text);
-      const words = text?.trim().split(' ');
-      setArrayWords(words);
-      console.log('== araray words: ', arrayWords);
-    } catch (e) {}
+      let uniqueWords = [...new Set(text?.split(' '))];
+      uniqueWords.length = 12;
+      setArrayWords(uniqueWords);
+    } finally {
+      setGenerateDisabled(false);
+    }
   };
 
   useEffect(() => {
     _regenerate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const _copy = () => {
@@ -74,6 +77,7 @@ export const NewWallet = ({navigation}) => {
           </Pressable>
           <Pressable
             onPress={_regenerate}
+            disabled={generateDisabled}
             style={({pressed}) => [
               styles.btn,
               {
