@@ -21,21 +21,28 @@ import '@ethersproject/shims';
 import {ethers} from 'ethers';
 
 import Clipboard from '@react-native-clipboard/clipboard';
+import {useSelector, useDispatch} from 'react-redux';
+import {mnemonicAction} from '../../../actions';
+import Toast from 'react-native-toast-message';
 
 export const NewWallet = ({navigation}) => {
-  const [mnemonic, setMnemonic] = useState<string>('');
-  const [arrayWords, setArrayWords] = useState<string[]>();
-  const [copiedText, setCopiedText] = useState('');
   const [generateDisabled, setGenerateDisabled] = useState(false);
+  const {words, arrayWords} = useSelector((state: any) => state.mnemonic);
+  console.log({words});
 
-  const _regenerate = async () => {
+  const dispatch = useDispatch();
+  const updateMnemonic = (plainText: string, arrText: string[]) =>
+    dispatch(mnemonicAction({words: plainText, arrayWords: arrText}));
+
+  const _regenerate = () => {
     try {
       setGenerateDisabled(true);
-      const text = ethers.utils.entropyToMnemonic(ethers.utils.randomBytes(16));
-      setMnemonic(text);
-      let uniqueWords = [...new Set(text?.split(' '))];
+      const plainText = ethers.utils.entropyToMnemonic(
+        ethers.utils.randomBytes(16),
+      );
+      let uniqueWords = [...new Set(plainText?.split(' '))];
       uniqueWords.length = 12;
-      setArrayWords(uniqueWords);
+      updateMnemonic(plainText, uniqueWords);
     } finally {
       setGenerateDisabled(false);
     }
@@ -46,7 +53,12 @@ export const NewWallet = ({navigation}) => {
   }, []);
 
   const _copy = () => {
-    Clipboard.setString(mnemonic);
+    Clipboard.setString(words);
+    Toast.show({
+      type: 'success',
+      text1: 'Copied',
+      text2: 'Mnemonic copied to clipboard!',
+    });
   };
 
   return (
