@@ -60,3 +60,5 @@ buck-out/
 /ios/Pods/
 
 .watchman*
+
+.hprof
