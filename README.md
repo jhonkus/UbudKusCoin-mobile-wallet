@@ -22,6 +22,9 @@ UbudKusCoin Mobile Wallet
 
 ##Open Android Studio, Create new AVD and run it
 
+##Run run metro first
+- yarn start
+
 ##Run app on android
 - yarn android
 
