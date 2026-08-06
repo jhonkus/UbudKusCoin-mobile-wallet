@@ -2,7 +2,7 @@ import React from 'react';
 import {View, Text, TouchableOpacity, Image} from 'react-native';
 import IMAGES from '../../../../assets';
 import styleSheet from './style';
-export const SendSuccess = ({navigation}) => {
+export const SendSuccess = ({navigation, route}: any) => {
   const styles = styleSheet();
 
   return (
@@ -10,9 +10,9 @@ export const SendSuccess = ({navigation}) => {
       <View style={styles.partTop}>
         <Image source={IMAGES.IconSuccess} style={styles.logo} />
         <Text style={styles.desc}>
-          Transaction successfully send to Ethereum blockhcain, you will receive
-          confirmation soon!
+          Transaction submitted to the UbudKusCoin network.
         </Text>
+        <Text>{route.params?.txId ?? ''}</Text>
       </View>
       <View style={styles.partBottom}>
         <TouchableOpacity

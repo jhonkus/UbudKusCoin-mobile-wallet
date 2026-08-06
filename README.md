@@ -31,6 +31,24 @@ UbudKusCoin Mobile Wallet
 ##Run app on macos, need xcode
 - yarn ios
 
+## UKC testnet transaction integration
+
+The wallet now uses the UbudKusCoin protocol directly. It derives the first
+account at `m/0`, creates the network's Base58Check address, signs the canonical
+KTX2 envelope with secp256k1 DER signatures, reads the canonical nonce from the
+node API, and submits the bytes through CometBFT `broadcast_tx_sync`.
+
+For the local Android emulator, the defaults are:
+
+- API: `http://10.0.2.2:5001`
+- CometBFT RPC: `http://10.0.2.2:26657`
+
+These HTTP defaults are development-only. A real deployment must use HTTPS,
+an authenticated gateway, and a restricted CometBFT RPC; never expose the
+CometBFT RPC directly to the public internet. The current wallet still keeps
+the seed in Redux memory for this integration phase. Secure OS-backed seed
+storage and PIN-based unlock are required before a production release.
+
 
 
 

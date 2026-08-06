@@ -1,46 +1,64 @@
-import React from 'react';
-import {View, Text, FlatList, TouchableOpacity} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, Text, FlatList, TouchableOpacity, ActivityIndicator} from 'react-native';
+import {useSelector} from 'react-redux';
+import {UKC_API_BASE_URL, UKC_NODE_RPC_URL} from '../../../constants';
+import {broadcastTransaction, createSignedTransfer, getAccount, walletAddressFromMnemonic, SignedTransfer} from '../../../protocol';
 import styleSheet from './style';
 
-const DATA = [
-  {label: 'From', id: 1, value: '0x2f1df65944443a049c49851660dfd53b0e71269f'},
-  {label: 'To', id: 2, value: '0x002010e1aacc7fba0ef5c5114a89b0749e57ec90'},
-  {label: 'Value', id: 3, value: '0.00001 Ether ($80.99)'},
-  {label: 'Transaction Fee', id: 4, value: '0.002755277918463 Ether ($8.99)'},
-];
-
-const Item = props => {
-  console.log(props.data.address);
+export const SendConfirmation = ({navigation, route}: any) => {
   const styles = styleSheet();
-  return (
-    <View style={styles.rowDtl}>
-      <Text style={styles.itemLabel}>{props.data.label}</Text>
-      <Text style={styles.itemValue}>{props.data.value}</Text>
-    </View>
-  );
-};
+  const mnemonic = useSelector((state: any) => state.mnemonic?.words ?? '');
+  const {recipient, amount, fee} = route.params ?? {};
+  const [transfer, setTransfer] = useState<SignedTransfer | null>(null);
+  const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
 
-export const SendConfirmation = ({navigation}) => {
-  const styles = styleSheet();
-  const renderItem = ({item}) => {
-    return <Item data={item} />;
+  useEffect(() => {
+    let active = true;
+    const prepare = async () => {
+      try {
+        if (!mnemonic) throw new Error('Wallet seed is not loaded.');
+        const sender = walletAddressFromMnemonic(mnemonic);
+        const account = await getAccount(UKC_API_BASE_URL, sender);
+        const nonce = BigInt(account.nonce) + 1n;
+        const signed = createSignedTransfer({mnemonic, to: recipient, amount, fee, nonce});
+        if (active) setTransfer(signed);
+      } catch (prepareError: any) {
+        if (active) setError(prepareError?.message ?? 'Unable to prepare transaction.');
+      }
+    };
+    prepare();
+    return () => { active = false; };
+  }, [mnemonic, recipient, amount, fee]);
+
+  const submit = async () => {
+    if (!transfer || sending) return;
+    setSending(true);
+    try {
+      const result = await broadcastTransaction(UKC_NODE_RPC_URL, transfer.bytes);
+      if (result.code !== 0) throw new Error(result.log || `Node rejected transaction (${result.code}).`);
+      navigation.replace('SendSuccess', {txId: transfer.txId});
+    } catch (submitError: any) {
+      setError(submitError?.message ?? 'Transaction was not accepted.');
+      setSending(false);
+    }
   };
-  const myKeyExtractor = item => {
-    return item.id;
-  };
+
+  const rows = transfer ? [
+    {label: 'From', id: 'from', value: transfer.sender},
+    {label: 'To', id: 'to', value: transfer.recipient},
+    {label: 'Amount', id: 'amount', value: `${transfer.amountBaseUnits.toString()} base units`},
+    {label: 'Fee', id: 'fee', value: `${transfer.feeBaseUnits.toString()} base units`},
+    {label: 'Nonce', id: 'nonce', value: transfer.nonce.toString()},
+  ] : [];
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={DATA}
-        renderItem={renderItem}
-        keyExtractor={myKeyExtractor}
-      />
+      {!transfer && !error && <ActivityIndicator />}
+      {error ? <Text>{error}</Text> : <FlatList data={rows} renderItem={({item}) => <View style={styles.rowDtl}><Text style={styles.itemLabel}>{item.label}</Text><Text style={styles.itemValue}>{item.value}</Text></View>} keyExtractor={item => item.id} />}
       <View style={styles.btnBox}>
-        <TouchableOpacity
-          style={styles.btnContinue}
-          onPress={() => navigation.navigate('SendSuccess')}>
-          <Text style={styles.txtContinue}>Continue</Text>
+        <TouchableOpacity style={styles.btnContinue} disabled={!transfer || sending} onPress={submit}>
+          <Text style={styles.txtContinue}>{sending ? 'Sending...' : 'Sign and Send'}</Text>
         </TouchableOpacity>
       </View>
     </View>
