@@ -11,11 +11,37 @@ export interface AccountState {
   height: string | number;
 }
 
+export interface TransactionSummary {
+  txId: string;
+  height: string | number;
+  timeStamp: string | number;
+  from: string;
+  to: string;
+  amountBaseUnits: string | number;
+  feeBaseUnits: string | number;
+  nonce: string | number;
+}
+
+export function formatBaseUnits(value: string | number): string {
+  const units = BigInt(value);
+  const whole = units / 100000000n;
+  const fraction = (units % 100000000n).toString().padStart(8, '0').replace(/0+$/, '');
+  return fraction ? `${whole}.${fraction}` : whole.toString();
+}
+
 export async function getAccount(apiBaseUrl: string, address: string): Promise<AccountState> {
   const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/api/v1/accounts/${encodeURIComponent(address)}`);
   if (response.status === 404) throw new Error('Sender account was not found on this network.');
   if (!response.ok) throw new Error(`Node API returned HTTP ${response.status}.`);
   return response.json();
+}
+
+export async function getTransactions(apiBaseUrl: string, address: string, limit = 50): Promise<TransactionSummary[]> {
+  const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/api/v1/accounts/${encodeURIComponent(address)}/transactions?limit=${limit}`);
+  if (!response.ok) throw new Error(`Node API returned HTTP ${response.status}.`);
+  const transactions = await response.json();
+  if (!Array.isArray(transactions)) throw new Error('Node API returned an invalid transaction list.');
+  return transactions;
 }
 
 export async function broadcastTransaction(nodeRpcUrl: string, txBytes: Uint8Array): Promise<BroadcastResult> {

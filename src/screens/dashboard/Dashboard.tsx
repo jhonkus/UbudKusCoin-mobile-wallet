@@ -1,141 +1,66 @@
-import React, {useState} from 'react';
-import {useEffect} from 'react';
-import {Pressable} from 'react-native';
-import {Text, FlatList, View, Image, TouchableOpacity} from 'react-native';
+import React, {useCallback, useEffect, useState} from 'react';
+import {Text, FlatList, View, Image, TouchableOpacity, RefreshControl} from 'react-native';
+import {useSelector} from 'react-redux';
 import IMAGES from '../../../assets';
+import {UKC_API_BASE_URL} from '../../constants';
+import {formatBaseUnits, getAccount, getTransactions, TransactionSummary, walletAddressFromMnemonic} from '../../protocol';
 import styleSheet from './style';
 
-const DATA = [
-  {
-    address: '0xbb1df8d6ad9809...',
-    id: '0',
-    txDate: '22/08/2021 09:09:09',
-    amount: '0.59 Ukc',
-  },
-  {
-    address: '0xf29cb956b580b31...',
-    id: '1',
-    txDate: '23/08/2021 09:09:09',
-    amount: '0.0789 Ukc',
-  },
-  {
-    address: '0x93e59a5ebd7453...',
-    id: '2',
-    txDate: '22/08/2021 09:09:09',
-    amount: '0.01 Ukc',
-  },
-  {
-    address: '0x8494b1f11248...',
-    id: '3',
-    txDate: '24/08/2021 09:09:09',
-    amount: '0.00349 Ukc',
-  },
-  {
-    address: '0xebf45fdcf3f20b7...',
-    id: '4',
-    txDate: '25/08/2021 09:09:09',
-    amount: '0.0634 Ukc',
-  },
-];
-
-const Item = props => {
-  console.log(props.data.address);
+export const Dashboard = ({navigation}: any) => {
   const styles = styleSheet();
-  return (
-    <Pressable
-      onPress={() => {
-        props.navigator.navigate('TransactionDetail');
-      }}
-      style={({pressed}) => [
-        {
-          backgroundColor: pressed ? 'rgb(210, 230, 255)' : null,
-        },
-        styles.wrapperCustom,
-      ]}>
-      <View style={styles.row}>
-        <View style={styles.colLeft}>
-          <Text style={styles.itemAddress}>{props.data.address}</Text>
-          <Text style={styles.itemDate}>{props.data.txDate}</Text>
-        </View>
-        <View style={styles.colRight}>
-          <Text style={styles.itemAmmount}>{props.data.amount}</Text>
-        </View>
-      </View>
-    </Pressable>
-  );
-};
-
-export const Dashboard = ({navigation}) => {
-  const [balance, setBalance] = useState(10);
+  const mnemonic = useSelector((state: any) => state.mnemonic?.words ?? '');
   const [address, setAddress] = useState('');
+  const [balance, setBalance] = useState('0');
+  const [transactions, setTransactions] = useState<TransactionSummary[]>([]);
+  const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [refreshing, setRefreshing] = React.useState(false);
-  const handleRefresh = () => {
-    setRefreshing(prevState => !prevState);
-  };
+  const refresh = useCallback(async () => {
+    if (!mnemonic) {
+      setError('Wallet seed is not loaded.');
+      return;
+    }
+    setRefreshing(true);
+    try {
+      const walletAddress = walletAddressFromMnemonic(mnemonic);
+      const [account, history] = await Promise.all([
+        getAccount(UKC_API_BASE_URL, walletAddress),
+        getTransactions(UKC_API_BASE_URL, walletAddress),
+      ]);
+      setAddress(walletAddress);
+      setBalance(formatBaseUnits(account.balanceBaseUnits));
+      setTransactions(history);
+      setError('');
+    } catch (refreshError: any) {
+      setError(refreshError?.message ?? 'Unable to load wallet data.');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [mnemonic]);
 
-  const styles = styleSheet();
-
-  const myKeyExtractor = item => {
-    return item.id;
-  };
-
-  const renderItem = ({item}) => {
-    return <Item data={item} navigator={navigation} />;
-  };
-
-  useEffect(() => {
-    setAddress('0x2f1df659444...d53b0e71269f');
-    setBalance(103.09);
-  }, []);
+  useEffect(() => { refresh(); }, [refresh]);
 
   return (
     <View style={styles.container}>
       <View style={styles.accountInfo}>
-        <Text style={styles.name}>Acount 1</Text>
-        <Text style={styles.address}>{address}</Text>
+        <Text style={styles.name}>UbudKusCoin Wallet</Text>
+        <Text style={styles.address}>{address || 'Loading address...'}</Text>
         <Text style={styles.balance}>{balance} UKC</Text>
       </View>
+      {error ? <Text>{error}</Text> : null}
       <View style={styles.btnBox}>
-        <TouchableOpacity
-          style={[styles.btnAction]}
-          onPress={() => navigation.navigate('Send')}>
-          <Image source={IMAGES.IconSend} style={styles.icon} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.btnAction]}
-          onPress={() => navigation.navigate('Receive')}>
-          <Image source={IMAGES.IconReceive} style={styles.icon} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.btnAction]}
-          onPress={() => navigation.navigate('Scan')}>
-          <Image source={IMAGES.IconScan} style={styles.icon} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.btnAction]}
-          onPress={() => navigation.navigate('Home')}>
-          <Image source={IMAGES.IconExit} style={styles.icon} />
-        </TouchableOpacity>
+        <TouchableOpacity style={styles.btnAction} onPress={() => navigation.navigate('Send')}><Image source={IMAGES.IconSend} style={styles.icon} /></TouchableOpacity>
+        <TouchableOpacity style={styles.btnAction} onPress={() => navigation.navigate('Receive')}><Image source={IMAGES.IconReceive} style={styles.icon} /></TouchableOpacity>
+        <TouchableOpacity style={styles.btnAction} onPress={() => navigation.navigate('Scan')}><Image source={IMAGES.IconScan} style={styles.icon} /></TouchableOpacity>
+        <TouchableOpacity style={styles.btnAction} onPress={() => navigation.navigate('Home')}><Image source={IMAGES.IconExit} style={styles.icon} /></TouchableOpacity>
       </View>
-      <View style={styles.subtitle}>
-        <View style={styles.subLeft}>
-          <Text style={styles.textLeft}>Transaction(s)</Text>
-        </View>
-        <Pressable
-          style={styles.subRight}
-          onPress={() => {
-            navigation.navigate('Transactions');
-          }}>
-          <Text style={styles.textRight}>Show All</Text>
-        </Pressable>
-      </View>
+      <View style={styles.subtitle}><Text style={styles.textLeft}>Transactions</Text></View>
       <FlatList
-        data={DATA}
-        renderItem={renderItem}
-        keyExtractor={myKeyExtractor}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
+        data={transactions}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+        ListEmptyComponent={<Text>{error ? '' : 'No transactions yet.'}</Text>}
+        renderItem={({item}) => <View style={styles.row}><View style={styles.colLeft}><Text style={styles.itemAddress}>{item.txId}</Text><Text style={styles.itemDate}>Block {item.height}</Text></View><View style={styles.colRight}><Text style={styles.itemAmmount}>{formatBaseUnits(item.amountBaseUnits)} UKC</Text></View></View>}
+        keyExtractor={item => item.txId}
       />
     </View>
   );
