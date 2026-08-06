@@ -46,8 +46,9 @@ For the local Android emulator, the defaults are:
 These HTTP defaults are development-only. A real deployment must use HTTPS,
 an authenticated gateway, and a restricted CometBFT RPC; never expose the
 CometBFT RPC directly to the public internet. The current wallet still keeps
-the seed in Redux memory for this integration phase. Secure OS-backed seed
-storage and PIN-based unlock are required before a production release.
+the seed in a locked in-memory session for this integration phase; it is no
+longer stored in Redux or navigation state. Secure OS-backed seed storage is
+still required before a production release.
 
 
 

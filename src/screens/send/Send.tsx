@@ -1,12 +1,12 @@
 import React, {useEffect, useState} from 'react';
 import {View, Text, TextInput, TouchableOpacity} from 'react-native';
-import {useSelector} from 'react-redux';
 import styleSheet from './style';
 import {walletAddressFromMnemonic} from '../../protocol';
+import {WalletSession} from '../../wallet/WalletSession';
 
 export const Send = ({navigation}: any) => {
   const styles = styleSheet();
-  const mnemonic = useSelector((state: any) => state.mnemonic?.words ?? '');
+  const mnemonic = WalletSession.isUnlocked() ? WalletSession.getMnemonic() : '';
   const [sender, setSender] = useState('');
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');

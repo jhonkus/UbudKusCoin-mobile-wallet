@@ -21,18 +21,13 @@ import '@ethersproject/shims';
 import {ethers} from 'ethers';
 
 import Clipboard from '@react-native-clipboard/clipboard';
-import {useSelector, useDispatch} from 'react-redux';
-import {mnemonicAction} from '../../../actions';
 import Toast from 'react-native-toast-message';
+import {WalletSession} from '../../../wallet/WalletSession';
 
 export const NewWallet = ({navigation}) => {
   const [generateDisabled, setGenerateDisabled] = useState(false);
-  const {words, arrayWords} = useSelector((state: any) => state.mnemonic);
-  console.log({words});
-
-  const dispatch = useDispatch();
-  const updateMnemonic = (plainText: string, arrText: string[]) =>
-    dispatch(mnemonicAction({words: plainText, arrayWords: arrText}));
+  const [words, setWords] = useState('');
+  const [arrayWords, setArrayWords] = useState<string[]>([]);
 
   const _regenerate = () => {
     try {
@@ -42,7 +37,9 @@ export const NewWallet = ({navigation}) => {
       );
       let uniqueWords = [...new Set(plainText?.split(' '))];
       uniqueWords.length = 12;
-      updateMnemonic(plainText, uniqueWords);
+      setWords(plainText);
+      setArrayWords(uniqueWords);
+      WalletSession.beginSetup(plainText);
     } finally {
       setGenerateDisabled(false);
     }
@@ -113,7 +110,10 @@ export const NewWallet = ({navigation}) => {
         <View style={styles.partBottom}>
           <TouchableOpacity
             style={[styles.btn, styles.btnNew]}
-            onPress={() => navigation.navigate('Pin')}>
+            onPress={() => {
+              WalletSession.beginSetup(words);
+              navigation.navigate('Pin');
+            }}>
             <Text style={styles.btnLabel}>Continue</Text>
           </TouchableOpacity>
         </View>

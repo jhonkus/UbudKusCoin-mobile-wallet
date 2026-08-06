@@ -1,15 +1,15 @@
 import React from 'react';
 import {View, Text, Image, TouchableOpacity} from 'react-native';
-import {useSelector} from 'react-redux';
 import QRCode from 'react-native-qrcode-svg';
 import Clipboard from '@react-native-clipboard/clipboard';
 import IMAGES from '../../../assets';
 import {walletAddressFromMnemonic} from '../../protocol';
+import {WalletSession} from '../../wallet/WalletSession';
 import styleSheet from './style';
 
 export const Receive = () => {
   const styles = styleSheet();
-  const mnemonic = useSelector((state: any) => state.mnemonic?.words ?? '');
+  const mnemonic = WalletSession.isUnlocked() ? WalletSession.getMnemonic() : '';
   const address = mnemonic ? walletAddressFromMnemonic(mnemonic) : '';
 
   return (

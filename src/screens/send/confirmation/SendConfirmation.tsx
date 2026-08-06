@@ -1,13 +1,13 @@
 import React, {useEffect, useState} from 'react';
 import {View, Text, FlatList, TouchableOpacity, ActivityIndicator} from 'react-native';
-import {useSelector} from 'react-redux';
 import {UKC_API_BASE_URL, UKC_NODE_RPC_URL} from '../../../constants';
 import {broadcastTransaction, createSignedTransfer, getAccount, walletAddressFromMnemonic, SignedTransfer} from '../../../protocol';
 import styleSheet from './style';
+import {WalletSession} from '../../../wallet/WalletSession';
 
 export const SendConfirmation = ({navigation, route}: any) => {
   const styles = styleSheet();
-  const mnemonic = useSelector((state: any) => state.mnemonic?.words ?? '');
+  const mnemonic = WalletSession.isUnlocked() ? WalletSession.getMnemonic() : '';
   const {recipient, amount, fee} = route.params ?? {};
   const [transfer, setTransfer] = useState<SignedTransfer | null>(null);
   const [error, setError] = useState('');

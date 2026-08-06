@@ -1,7 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {SafeAreaView, StatusBar, Text, View, StyleSheet} from 'react-native';
 import ReactNativePinView from 'react-native-pin-view';
-export const Pin = ({navigation}) => {
+import {WalletSession} from '../../wallet/WalletSession';
+export const Pin = ({navigation, route}: any) => {
   const pinView = useRef(null);
   const [showRemoveButton, setShowRemoveButton] = useState(false);
   const [enteredPin, setEnteredPin] = useState('');
@@ -70,10 +71,17 @@ export const Pin = ({navigation}) => {
               pinView.current.clear();
             }
             if (key === 'custom_right') {
-              navigation.navigate('Dashboard');
-            }
-            if (key === 'three') {
-              console.log(' theree was presed');
+              try {
+                if (route?.params?.mode === 'unlock') {
+                  if (!WalletSession.unlock(enteredPin)) throw new Error('Invalid PIN.');
+                } else {
+                  WalletSession.completeSetup(enteredPin);
+                }
+                navigation.replace('Dashboard');
+              } catch {
+                setEnteredPin('');
+                pinView.current?.clear();
+              }
             }
           }}
           customLeftButton={

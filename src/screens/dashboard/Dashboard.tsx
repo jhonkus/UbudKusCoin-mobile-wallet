@@ -1,14 +1,14 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {Text, FlatList, View, Image, TouchableOpacity, RefreshControl} from 'react-native';
-import {useSelector} from 'react-redux';
 import IMAGES from '../../../assets';
 import {UKC_API_BASE_URL} from '../../constants';
 import {formatBaseUnits, getAccount, getTransactions, TransactionSummary, walletAddressFromMnemonic} from '../../protocol';
+import {WalletSession} from '../../wallet/WalletSession';
 import styleSheet from './style';
 
 export const Dashboard = ({navigation}: any) => {
   const styles = styleSheet();
-  const mnemonic = useSelector((state: any) => state.mnemonic?.words ?? '');
+  const mnemonic = WalletSession.isUnlocked() ? WalletSession.getMnemonic() : '';
   const [address, setAddress] = useState('');
   const [balance, setBalance] = useState('0');
   const [transactions, setTransactions] = useState<TransactionSummary[]>([]);
@@ -52,7 +52,7 @@ export const Dashboard = ({navigation}: any) => {
         <TouchableOpacity style={styles.btnAction} onPress={() => navigation.navigate('Send')}><Image source={IMAGES.IconSend} style={styles.icon} /></TouchableOpacity>
         <TouchableOpacity style={styles.btnAction} onPress={() => navigation.navigate('Receive')}><Image source={IMAGES.IconReceive} style={styles.icon} /></TouchableOpacity>
         <TouchableOpacity style={styles.btnAction} onPress={() => navigation.navigate('Scan')}><Image source={IMAGES.IconScan} style={styles.icon} /></TouchableOpacity>
-        <TouchableOpacity style={styles.btnAction} onPress={() => navigation.navigate('Home')}><Image source={IMAGES.IconExit} style={styles.icon} /></TouchableOpacity>
+        <TouchableOpacity style={styles.btnAction} onPress={() => { WalletSession.lock(); navigation.replace('Home'); }}><Image source={IMAGES.IconExit} style={styles.icon} /></TouchableOpacity>
       </View>
       <View style={styles.subtitle}><Text style={styles.textLeft}>Transactions</Text></View>
       <FlatList
