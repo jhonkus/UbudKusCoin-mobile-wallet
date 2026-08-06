@@ -22,6 +22,13 @@ export interface TransactionSummary {
   nonce: string | number;
 }
 
+export interface TransactionStatus {
+  txId: string;
+  status: 'pending' | 'confirmed' | 'rejected';
+  message: string;
+  height?: string | number | null;
+}
+
 export function formatBaseUnits(value: string | number): string {
   const units = BigInt(value);
   const whole = units / 100000000n;
@@ -42,6 +49,32 @@ export async function getTransactions(apiBaseUrl: string, address: string, limit
   const transactions = await response.json();
   if (!Array.isArray(transactions)) throw new Error('Node API returned an invalid transaction list.');
   return transactions;
+}
+
+export async function getTransactionStatus(apiBaseUrl: string, txId: string): Promise<TransactionStatus> {
+  const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/api/v1/transactions/${encodeURIComponent(txId)}`);
+  if (response.status === 404) throw new Error('Transaction status is not available yet.');
+  if (!response.ok) throw new Error(`Node API returned HTTP ${response.status}.`);
+  return response.json();
+}
+
+export async function waitForTransaction(
+  apiBaseUrl: string,
+  txId: string,
+  timeoutMs = 30000,
+  intervalMs = 1000,
+): Promise<TransactionStatus> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() <= deadline) {
+    try {
+      const status = await getTransactionStatus(apiBaseUrl, txId);
+      if (status.status !== 'pending') return status;
+    } catch (error: any) {
+      if (!String(error?.message).includes('not available yet')) throw error;
+    }
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
+  }
+  return {txId, status: 'pending', message: 'Transaction is still waiting for block confirmation.'};
 }
 
 export async function broadcastTransaction(nodeRpcUrl: string, txBytes: Uint8Array): Promise<BroadcastResult> {
