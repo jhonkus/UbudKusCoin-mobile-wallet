@@ -144,6 +144,7 @@ export interface TransferInput {
   fee: string;
   nonce: bigint;
   chainId?: number;
+  minFeeBaseUnits?: bigint;
   validFrom?: number;
   validUntil?: number;
 }
@@ -167,7 +168,9 @@ export function createSignedTransfer(input: TransferInput): SignedTransfer {
   const amount = parseAmount(input.amount);
   const fee = parseAmount(input.fee);
   if (amount <= 0n) throw new Error('Amount must be greater than zero.');
-  if (fee < UKC_MIN_RELAY_FEE_BASE_UNITS) throw new Error('Fee is below the network minimum.');
+  if (fee < (input.minFeeBaseUnits ?? UKC_MIN_RELAY_FEE_BASE_UNITS)) {
+    throw new Error('Fee is below the network minimum.');
+  }
 
   const recipient = input.to.trim();
   if (!isValidAddress(recipient, chainId)) throw new Error('Recipient is not a valid UKC address.');

@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {View, Text, FlatList, TouchableOpacity, ActivityIndicator} from 'react-native';
 import {UKC_API_BASE_URL, UKC_NODE_RPC_URL} from '../../../constants';
-import {broadcastTransaction, createSignedTransfer, getAccount, walletAddressFromMnemonic, SignedTransfer} from '../../../protocol';
+import {broadcastTransaction, createSignedTransfer, getAccount, getNetwork, parseAmount, walletAddressFromMnemonic, SignedTransfer} from '../../../protocol';
 import styleSheet from './style';
 import {WalletSession} from '../../../wallet/WalletSession';
 
@@ -19,9 +19,25 @@ export const SendConfirmation = ({navigation, route}: any) => {
       try {
         if (!mnemonic) throw new Error('Wallet seed is not loaded.');
         const sender = walletAddressFromMnemonic(mnemonic);
-        const account = await getAccount(UKC_API_BASE_URL, sender);
+        const [network, account] = await Promise.all([
+          getNetwork(UKC_API_BASE_URL),
+          getAccount(UKC_API_BASE_URL, sender),
+        ]);
+        const amountBaseUnits = parseAmount(amount);
+        const feeBaseUnits = parseAmount(fee);
+        if (amountBaseUnits + feeBaseUnits > BigInt(account.balanceBaseUnits)) {
+          throw new Error('Insufficient balance for amount and fee.');
+        }
         const nonce = BigInt(account.nonce) + 1n;
-        const signed = createSignedTransfer({mnemonic, to: recipient, amount, fee, nonce});
+        const signed = createSignedTransfer({
+          mnemonic,
+          to: recipient,
+          amount,
+          fee,
+          nonce,
+          chainId: Number(network.chainId),
+          minFeeBaseUnits: BigInt(network.minRelayFeeBaseUnits),
+        });
         if (active) setTransfer(signed);
       } catch (prepareError: any) {
         if (active) setError(prepareError?.message ?? 'Unable to prepare transaction.');

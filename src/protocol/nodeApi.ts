@@ -4,6 +4,12 @@ export interface BroadcastResult {
   log?: string;
 }
 
+export interface NetworkInfo {
+  chainId: string | number;
+  height: string | number;
+  minRelayFeeBaseUnits: string | number;
+}
+
 export interface AccountState {
   address: string;
   balanceBaseUnits: string | number;
@@ -34,6 +40,23 @@ export function formatBaseUnits(value: string | number): string {
   const whole = units / 100000000n;
   const fraction = (units % 100000000n).toString().padStart(8, '0').replace(/0+$/, '');
   return fraction ? `${whole}.${fraction}` : whole.toString();
+}
+
+export async function getNetwork(apiBaseUrl: string): Promise<NetworkInfo> {
+  const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/api/v1/network`);
+  if (!response.ok) throw new Error(`Node API returned HTTP ${response.status}.`);
+  const network = await response.json();
+  const chainId = Number(network?.chainId);
+  const minRelayFeeBaseUnits = String(network?.minRelayFeeBaseUnits ?? '');
+  if (
+    !network ||
+    !Number.isSafeInteger(chainId) ||
+    chainId <= 0 ||
+    !/^\d+$/.test(minRelayFeeBaseUnits)
+  ) {
+    throw new Error('Node API returned invalid network parameters.');
+  }
+  return {chainId, height: network.height, minRelayFeeBaseUnits};
 }
 
 export async function getAccount(apiBaseUrl: string, address: string): Promise<AccountState> {
