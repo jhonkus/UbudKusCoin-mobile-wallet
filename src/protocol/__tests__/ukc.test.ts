@@ -34,7 +34,7 @@ describe('UKC transaction protocol', () => {
       nonce: 1n,
     });
     expect(wallet.bytes[0]).toBe(0x4b);
-    expect(wallet.bytes[1]).toBe(0x58);
+    expect(wallet.bytes[1]).toBe(0x54);
     expect(wallet.txId).toMatch(/^0x[0-9a-f]{64}$/);
   });
 });

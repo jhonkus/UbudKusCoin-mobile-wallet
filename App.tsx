@@ -10,7 +10,6 @@ import {Receive} from './src/screens/receive';
 import {Scan} from './src/screens/scan';
 import {Buy} from './src/screens/buy';
 import {Send, SendConfirmation, SendSuccess} from './src/screens/send';
-import Toast from 'react-native-toast-message';
 const Stack = createNativeStackNavigator();
 
 const App = () => {
@@ -77,7 +76,6 @@ const App = () => {
           />
         </Stack.Navigator>
       </NavigationContainer>
-      <Toast ref={ref => Toast.setRef(ref)} />
     </>
   );
 };

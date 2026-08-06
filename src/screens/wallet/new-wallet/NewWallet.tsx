@@ -21,10 +21,13 @@ import '@ethersproject/shims';
 import {ethers} from 'ethers';
 
 import Clipboard from '@react-native-clipboard/clipboard';
-import Toast from 'react-native-toast-message';
 import {WalletSession} from '../../../wallet/WalletSession';
 
-export const NewWallet = ({navigation}) => {
+type NewWalletProps = {
+  navigation: {navigate: (screen: string) => void};
+};
+
+export const NewWallet = ({navigation}: NewWalletProps) => {
   const [generateDisabled, setGenerateDisabled] = useState(false);
   const [words, setWords] = useState('');
   const [arrayWords, setArrayWords] = useState<string[]>([]);
@@ -51,11 +54,6 @@ export const NewWallet = ({navigation}) => {
 
   const _copy = () => {
     Clipboard.setString(words);
-    Toast.show({
-      type: 'success',
-      text1: 'Copied',
-      text2: 'Mnemonic copied to clipboard!',
-    });
   };
 
   return (

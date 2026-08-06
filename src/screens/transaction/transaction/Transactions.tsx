@@ -97,13 +97,15 @@ const DATA = [
   },
 ];
 
-const Item = props => {
-  console.log(props.data.address);
+type TransactionItem = (typeof DATA)[number];
+type Navigation = {navigate: (screen: string) => void};
+
+const Item = ({data, navigator}: {data: TransactionItem; navigator: Navigation}) => {
   const styles = styleSheet();
   return (
     <Pressable
       onPress={() => {
-        props.navigator.navigate('TransactionDetail');
+        navigator.navigate('TransactionDetail');
       }}
       style={({pressed}) => [
         {
@@ -113,18 +115,18 @@ const Item = props => {
       ]}>
       <View style={styles.row}>
         <View style={styles.colLeft}>
-          <Text style={styles.itemAddress}>{props.data.address}</Text>
-          <Text style={styles.itemDate}>{props.data.txDate}</Text>
+          <Text style={styles.itemAddress}>{data.address}</Text>
+          <Text style={styles.itemDate}>{data.txDate}</Text>
         </View>
         <View style={styles.colRight}>
-          <Text style={styles.itemAmmount}>{props.data.amount}</Text>
+          <Text style={styles.itemAmmount}>{data.amount}</Text>
         </View>
       </View>
     </Pressable>
   );
 };
 
-export const Transactions = ({navigation}) => {
+export const Transactions = ({navigation}: {navigation: Navigation}) => {
   const [refreshing, setRefreshing] = React.useState(false);
   const handleRefresh = () => {
     setRefreshing(prevState => !prevState);
@@ -132,11 +134,11 @@ export const Transactions = ({navigation}) => {
 
   const styles = styleSheet();
 
-  const myKeyExtractor = item => {
-    return item.id;
+  const myKeyExtractor = (item: TransactionItem) => {
+    return String(item.id);
   };
 
-  const renderItem = ({item}) => {
+  const renderItem = ({item}: {item: TransactionItem}) => {
     return <Item data={item} navigator={navigation} />;
   };
 

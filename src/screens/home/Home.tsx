@@ -1,9 +1,13 @@
 import React from 'react';
-import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {View, Text, Image, TouchableOpacity} from 'react-native';
 import IMAGES from '../../../assets';
 import styles from './style';
 
-export const Home = ({navigation}) => {
+type HomeProps = {
+  navigation: {navigate: (screen: string) => void};
+};
+
+export const Home = ({navigation}: HomeProps) => {
   return (
     <View style={styles.container}>
       <View style={styles.partTop}>

@@ -16,23 +16,25 @@ const DATA = [
   {label: 'Transaction Fee', id: 6, value: '0.002755277918463 Ukus ($8.99)'},
 ];
 
-const Item = props => {
+type TransactionDetailItem = (typeof DATA)[number];
+
+const Item = ({data}: {data: TransactionDetailItem}) => {
   const styles = styleSheet();
   return (
     <View style={styles.rowDtl}>
-      <Text style={styles.itemLabel}>{props.data.label}</Text>
-      <Text style={styles.itemValue}>{props.data.value}</Text>
+      <Text style={styles.itemLabel}>{data.label}</Text>
+      <Text style={styles.itemValue}>{data.value}</Text>
     </View>
   );
 };
 
 export const TransactionDetail = () => {
   const styles = styleSheet();
-  const renderItem = ({item}) => {
+  const renderItem = ({item}: {item: TransactionDetailItem}) => {
     return <Item data={item} />;
   };
-  const myKeyExtractor = item => {
-    return item.id;
+  const myKeyExtractor = (item: TransactionDetailItem) => {
+    return String(item.id);
   };
 
   return (

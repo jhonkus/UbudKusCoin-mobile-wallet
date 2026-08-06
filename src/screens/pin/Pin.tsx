@@ -1,117 +1,56 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {SafeAreaView, StatusBar, Text, View, StyleSheet} from 'react-native';
-import ReactNativePinView from 'react-native-pin-view';
+import React, {useState} from 'react';
+import {Pressable, SafeAreaView, StatusBar, StyleSheet, Text, View} from 'react-native';
 import {WalletSession} from '../../wallet/WalletSession';
+
+const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'ok'];
+
 export const Pin = ({navigation, route}: any) => {
-  const pinView = useRef(null);
-  const [showRemoveButton, setShowRemoveButton] = useState(false);
   const [enteredPin, setEnteredPin] = useState('');
-  const [showCompletedButton, setShowCompletedButton] = useState(false);
-  useEffect(() => {
-    if (enteredPin.length > 0) {
-      setShowRemoveButton(true);
-    } else {
-      setShowRemoveButton(false);
+  const [error, setError] = useState('');
+  const isUnlock = route?.params?.mode === 'unlock';
+
+  const press = (key: string) => {
+    if (key === 'clear') return setEnteredPin(value => value.slice(0, -1));
+    if (key === 'ok') {
+      if (enteredPin.length !== 6) return setError('Enter all 6 digits.');
+      try {
+        if (isUnlock) {
+          if (!WalletSession.unlock(enteredPin)) throw new Error('Invalid PIN.');
+        } else {
+          WalletSession.completeSetup(enteredPin);
+        }
+        navigation.replace('Dashboard');
+      } catch {
+        setEnteredPin('');
+        setError('Invalid PIN or wallet setup expired.');
+      }
+      return;
     }
-    if (enteredPin.length === 6) {
-      setShowCompletedButton(true);
-    } else {
-      setShowCompletedButton(false);
+    if (enteredPin.length < 6) {
+      setError('');
+      setEnteredPin(value => value + key);
     }
-  }, [enteredPin]);
+  };
+
   return (
-    <>
+    <SafeAreaView style={styles.container}>
       <StatusBar />
-      <SafeAreaView
-        style={{
-          flex: 1,
-          backgroundColor: '#22577A',
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingBottom: 80,
-        }}>
-        {/* <Text
-          style={{
-            paddingTop: 0,
-            paddingBottom: 48,
-            color: 'rgba(255,255,255,0.7)',
-            fontSize: 24,
-          }}>
-          Input your PIN code
-        </Text> */}
-        <ReactNativePinView
-          inputSize={20}
-          ref={pinView}
-          pinLength={6}
-          buttonSize={60}
-          onValueChange={value => setEnteredPin(value)}
-          buttonAreaStyle={{
-            marginTop: 44,
-          }}
-          inputAreaStyle={{
-            marginBottom: 24,
-          }}
-          inputViewEmptyStyle={{
-            backgroundColor: 'transparent',
-            borderWidth: 1,
-            borderColor: '#FFF',
-          }}
-          inputViewFilledStyle={{
-            backgroundColor: '#FFF',
-          }}
-          buttonViewStyle={{
-            borderWidth: 1,
-            borderColor: '#FFF',
-          }}
-          buttonTextStyle={{
-            color: '#FFF',
-          }}
-          onButtonPress={key => {
-            if (key === 'custom_left') {
-              pinView.current.clear();
-            }
-            if (key === 'custom_right') {
-              try {
-                if (route?.params?.mode === 'unlock') {
-                  if (!WalletSession.unlock(enteredPin)) throw new Error('Invalid PIN.');
-                } else {
-                  WalletSession.completeSetup(enteredPin);
-                }
-                navigation.replace('Dashboard');
-              } catch {
-                setEnteredPin('');
-                pinView.current?.clear();
-              }
-            }
-          }}
-          customLeftButton={
-            showRemoveButton ? (
-              <View style={styles.btnPin}>
-                <Text style={styles.txtPin}> Clear </Text>
-              </View>
-            ) : undefined
-          }
-          customRightButton={
-            showCompletedButton ? (
-              <View style={styles.btnPin}>
-                <Text style={styles.txtPin}> Oke </Text>
-              </View>
-            ) : undefined
-          }
-        />
-      </SafeAreaView>
-    </>
+      <Text style={styles.title}>{isUnlock ? 'Unlock Wallet' : 'Create Wallet PIN'}</Text>
+      <View style={styles.dots}>{[0, 1, 2, 3, 4, 5].map(index => <View key={index} style={[styles.dot, index < enteredPin.length && styles.filled]} />)}</View>
+      <Text style={styles.error}>{error}</Text>
+      <View style={styles.pad}>{KEYS.map(key => <Pressable key={key} style={styles.key} onPress={() => press(key)}><Text style={styles.keyText}>{key === 'clear' ? 'DEL' : key === 'ok' ? 'OK' : key}</Text></Pressable>)}</View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  btnPin: {
-    borderWidth: 1,
-    borderRadius: 15,
-    padding: 8,
-    borderColor: '#ffffff',
-  },
-  txtPin: {
-    color: '#ffffff',
-  },
+  container: {flex: 1, backgroundColor: '#22577A', alignItems: 'center', justifyContent: 'center'},
+  title: {color: '#FFF', fontSize: 24, marginBottom: 28},
+  dots: {flexDirection: 'row', marginBottom: 12},
+  dot: {width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: '#FFF', marginHorizontal: 8},
+  filled: {backgroundColor: '#FFF'},
+  error: {color: '#FFD6D6', height: 24},
+  pad: {width: 270, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center'},
+  key: {width: 80, height: 60, margin: 4, borderWidth: 1, borderColor: '#FFF', borderRadius: 12, alignItems: 'center', justifyContent: 'center'},
+  keyText: {color: '#FFF', fontSize: 22},
 });
