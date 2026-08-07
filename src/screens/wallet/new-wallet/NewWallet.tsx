@@ -38,10 +38,12 @@ export const NewWallet = ({navigation}: NewWalletProps) => {
       const plainText = ethers.utils.entropyToMnemonic(
         ethers.utils.randomBytes(16),
       );
-      let uniqueWords = [...new Set(plainText?.split(' '))];
-      uniqueWords.length = 12;
+      if (!ethers.utils.isValidMnemonic(plainText)) {
+        throw new Error('Generated seed phrase failed validation. Please regenerate.');
+      }
+      const wordsArray = plainText.split(' ');
       setWords(plainText);
-      setArrayWords(uniqueWords);
+      setArrayWords(wordsArray);
       WalletSession.beginSetup(plainText);
     } finally {
       setGenerateDisabled(false);

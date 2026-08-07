@@ -1,24 +1,12 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {View, Text, FlatList} from 'react-native';
+import {UKC_API_BASE_URL} from '../../../constants';
+import {formatBaseUnits, getTransactionStatus, TransactionSummary, TransactionStatus} from '../../../protocol';
 import styleSheet from './style';
 
-const DATA = [
-  {label: 'Block ID', id: 0, value: '13129782'},
-  {label: 'TimeStamp', id: 1, value: 'Aug-30-2021 11:13:01 PM +UTC'},
-  {
-    label: 'Transaction Hash',
-    id: 2,
-    value: '0xaad631745729b5f6f94ddd66a93ec18d5cbe5749639aac5a2849967d67e940c9',
-  },
-  {label: 'From', id: 3, value: '0x2f1df65944443a049c49851660dfd53b0e71269f'},
-  {label: 'To', id: 4, value: '0x002010e1aacc7fba0ef5c5114a89b0749e57ec90'},
-  {label: 'Value', id: 5, value: '0.00001 Ukus ($80.99)'},
-  {label: 'Transaction Fee', id: 6, value: '0.002755277918463 Ukus ($8.99)'},
-];
+type DetailItem = {label: string; id: number; value: string};
 
-type TransactionDetailItem = (typeof DATA)[number];
-
-const Item = ({data}: {data: TransactionDetailItem}) => {
+const Item = ({data}: {data: DetailItem}) => {
   const styles = styleSheet();
   return (
     <View style={styles.rowDtl}>
@@ -28,22 +16,41 @@ const Item = ({data}: {data: TransactionDetailItem}) => {
   );
 };
 
-export const TransactionDetail = () => {
+export const TransactionDetail = ({route}: {route: {params?: {tx: TransactionSummary}}}) => {
   const styles = styleSheet();
-  const renderItem = ({item}: {item: TransactionDetailItem}) => {
-    return <Item data={item} />;
-  };
-  const myKeyExtractor = (item: TransactionDetailItem) => {
-    return String(item.id);
-  };
+  const tx = route?.params?.tx;
+  const [status, setStatus] = useState<TransactionStatus | null>(null);
+
+  useEffect(() => {
+    if (!tx) return;
+    getTransactionStatus(UKC_API_BASE_URL, tx.txId)
+      .then(result => setStatus(result))
+      .catch(error => setStatus({txId: tx.txId, status: 'rejected', message: error?.message ?? 'Unable to load status.'}));
+  }, [tx]);
+
+  if (!tx) {
+    return (
+      <View style={styles.container}><Text>Transaction not found.</Text></View>
+    );
+  }
+
+  const rows: DetailItem[] = [
+    {label: 'Transaction Hash', id: 0, value: tx.txId},
+    {label: 'Status', id: 1, value: status?.status ?? 'Loading...'},
+    {label: 'From', id: 2, value: tx.from},
+    {label: 'To', id: 3, value: tx.to},
+    {label: 'Amount', id: 4, value: `${formatBaseUnits(tx.amountBaseUnits)} UKC`},
+    {label: 'Fee', id: 5, value: `${formatBaseUnits(tx.feeBaseUnits)} UKC`},
+    {label: 'Nonce', id: 6, value: String(tx.nonce)},
+    {label: 'Block Height', id: 7, value: String(tx.height)},
+    {label: 'Timestamp', id: 8, value: String(tx.timeStamp)},
+  ];
+  const renderItem = ({item}: {item: DetailItem}) => <Item data={item} />;
+  const myKeyExtractor = (item: DetailItem) => String(item.id);
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={DATA}
-        renderItem={renderItem}
-        keyExtractor={myKeyExtractor}
-      />
+      <FlatList data={rows} renderItem={renderItem} keyExtractor={myKeyExtractor} />
     </View>
   );
 };

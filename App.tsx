@@ -1,5 +1,6 @@
-import React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
+import React, {useEffect, useRef} from 'react';
+import {AppState, AppStateStatus} from 'react-native';
+import {createNavigationContainerRef, NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {Home} from './src/screens/home';
 import {NewWallet, OpenWallet} from './src/screens/wallet';
@@ -10,12 +11,61 @@ import {Receive} from './src/screens/receive';
 import {Scan} from './src/screens/scan';
 import {Buy} from './src/screens/buy';
 import {Send, SendConfirmation, SendSuccess} from './src/screens/send';
-const Stack = createNativeStackNavigator();
+import {WalletSession} from './src/wallet/WalletSession';
+import {TransactionSummary} from './src/protocol';
+
+type RootStackParamList = {
+  Home: undefined;
+  OpenWallet: undefined;
+  NewWallet: undefined;
+  Pin: {mode?: 'unlock'} | undefined;
+  Dashboard: undefined;
+  TransactionDetail: {tx: TransactionSummary} | undefined;
+  Transactions: undefined;
+  Receive: undefined;
+  Scan: undefined;
+  Buy: undefined;
+  Send: {recipient?: string} | undefined;
+  SendConfirmation: {recipient?: string; amount?: string; fee?: string} | undefined;
+  SendSuccess: {txId?: string} | undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+/**
+ * Automatically locks the wallet when the app enters the background and
+ * redirects to the PIN unlock screen when it returns to the foreground
+ * (but only if a wallet was previously set up and is now locked).
+ */
+function useAppLock() {
+  const appState = useRef<AppStateStatus>(AppState.currentState);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (appState.current.match(/active/) && !nextAppState.match(/active/)) {
+        WalletSession.lock();
+      }
+      appState.current = nextAppState;
+      if (
+        nextAppState === 'active' &&
+        navigationRef.isReady() &&
+        WalletSession.hasActiveWallet() &&
+        !WalletSession.isUnlocked()
+      ) {
+        navigationRef.navigate('Pin', {mode: 'unlock'});
+      }
+    };
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, []);
+}
 
 const App = () => {
+  useAppLock();
   return (
     <>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator>
           <Stack.Screen
             name="Home"

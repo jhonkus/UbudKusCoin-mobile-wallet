@@ -24,7 +24,8 @@
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "^4.26.2",
     "react-native-size-matters": "^0.4.2",
-    "react-native-svg": "^15.15.5"
+    "react-native-svg": "^15.15.5",
+    "react-native-vision-camera": "^7.5.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

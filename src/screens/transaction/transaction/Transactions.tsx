@@ -1,111 +1,19 @@
-import React from 'react';
-import {useEffect} from 'react';
-import {Pressable} from 'react-native';
-import {Text, FlatList, View} from 'react-native';
+import React, {useCallback, useEffect, useState} from 'react';
+import {RefreshControl, Text, FlatList, View, Pressable} from 'react-native';
+import {UKC_API_BASE_URL} from '../../../constants';
+import {formatBaseUnits, getTransactions, TransactionSummary, walletAddressFromMnemonic} from '../../../protocol';
+import {WalletSession} from '../../../wallet/WalletSession';
 import styleSheet from './style';
 
-const DATA = [
-  {
-    address: '0xbb1df8d6ad9809...',
-    id: 0,
-    txDate: '22/08/2021 09:09:09',
-    amount: '0.59 Ukc',
-  },
-  {
-    address: '0xf29cb956b580b31...',
-    id: 1,
-    txDate: '23/08/2021 09:09:09',
-    amount: '0.0789 Ukc',
-  },
-  {
-    address: '0x93e59a5ebd7453...',
-    id: 2,
-    txDate: '22/08/2021 09:09:09',
-    amount: '0 Ukc',
-  },
-  {
-    address: '0x8494b1f11248...',
-    id: 3,
-    txDate: '24/08/2021 09:09:09',
-    amount: '0.00349 Ukc',
-  },
-  {
-    address: '0xebf45fdcf3f20b7...',
-    id: 4,
-    txDate: '25/08/2021 09:09:09',
-    amount: '0.0634 Ukc',
-  },
-  {
-    address: '0x93e59a5ebd7453...',
-    id: 5,
-    txDate: '22/08/2021 09:09:09',
-    amount: '0 Ukc',
-  },
-  {
-    address: '0x8494b1f11248...',
-    id: 6,
-    txDate: '24/08/2021 09:09:09',
-    amount: '0.00349 Ukc',
-  },
-  {
-    address: '0x93e59a5ebd7453...',
-    id: 7,
-    txDate: '22/08/2021 09:09:09',
-    amount: '0 Ukc',
-  },
-  {
-    address: '0x8494b1f11248...',
-    id: 8,
-    txDate: '24/08/2021 09:09:09',
-    amount: '0.00349 Ukc',
-  },
-  {
-    address: '0x93e59a5ebd7453...',
-    id: 9,
-    txDate: '22/08/2021 09:09:09',
-    amount: '0 Ukc',
-  },
-  {
-    address: '0x8494b1f11248...',
-    id: 10,
-    txDate: '24/08/2021 09:09:09',
-    amount: '0.00349 Ukc',
-  },
-  {
-    address: '0x93e59a5ebd7453...',
-    id: 11,
-    txDate: '22/08/2021 09:09:09',
-    amount: '0 Ukc',
-  },
-  {
-    address: '0x8494b1f11248...',
-    id: 12,
-    txDate: '24/08/2021 09:09:09',
-    amount: '0.00349 Ukc',
-  },
-  {
-    address: '0x93e59a5ebd7453...',
-    id: 13,
-    txDate: '22/08/2021 09:09:09',
-    amount: '0 Ukc',
-  },
-  {
-    address: '0x8494b1f11248...',
-    id: 14,
-    txDate: '24/08/2021 09:09:09',
-    amount: '0.00349 Ukc',
-  },
-];
+type Navigation = {navigate: (screen: string, params?: any) => void};
 
-type TransactionItem = (typeof DATA)[number];
-type Navigation = {navigate: (screen: string) => void};
-
-const Item = ({data, navigator}: {data: TransactionItem; navigator: Navigation}) => {
+const Item = ({data, navigator}: {data: TransactionSummary; navigator: Navigation}) => {
   const styles = styleSheet();
+  const otherParty = data.from === data.to ? data.to : (data.to || data.from);
   return (
     <Pressable
       onPress={() => {
-        navigator.navigate('TransactionDetail');
+        navigator.navigate('TransactionDetail', {tx: data});
       }}
       style={({pressed}) => [
         {
@@ -115,11 +23,11 @@ const Item = ({data, navigator}: {data: TransactionItem; navigator: Navigation})
       ]}>
       <View style={styles.row}>
         <View style={styles.colLeft}>
-          <Text style={styles.itemAddress}>{data.address}</Text>
-          <Text style={styles.itemDate}>{data.txDate}</Text>
+          <Text style={styles.itemAddress}>{otherParty}</Text>
+          <Text style={styles.itemDate}>Block {data.height}</Text>
         </View>
         <View style={styles.colRight}>
-          <Text style={styles.itemAmmount}>{data.amount}</Text>
+          <Text style={styles.itemAmmount}>{formatBaseUnits(data.amountBaseUnits)} UKC</Text>
         </View>
       </View>
     </Pressable>
@@ -127,31 +35,43 @@ const Item = ({data, navigator}: {data: TransactionItem; navigator: Navigation})
 };
 
 export const Transactions = ({navigation}: {navigation: Navigation}) => {
-  const [refreshing, setRefreshing] = React.useState(false);
-  const handleRefresh = () => {
-    setRefreshing(prevState => !prevState);
-  };
-
   const styles = styleSheet();
+  const [transactions, setTransactions] = useState<TransactionSummary[]>([]);
+  const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
-  const myKeyExtractor = (item: TransactionItem) => {
-    return String(item.id);
-  };
+  const refresh = useCallback(async () => {
+    const mnemonic = WalletSession.isUnlocked() ? WalletSession.getMnemonic() : '';
+    if (!mnemonic) {
+      setError('Wallet seed is not loaded.');
+      return;
+    }
+    setRefreshing(true);
+    try {
+      const walletAddress = walletAddressFromMnemonic(mnemonic);
+      const history = await getTransactions(UKC_API_BASE_URL, walletAddress);
+      setTransactions(history);
+      setError('');
+    } catch (refreshError: any) {
+      setError(refreshError?.message ?? 'Unable to load transaction history.');
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
-  const renderItem = ({item}: {item: TransactionItem}) => {
-    return <Item data={item} navigator={navigation} />;
-  };
-
-  useEffect(() => {}, []);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   return (
     <View style={styles.container}>
+      {error ? <Text>{error}</Text> : null}
       <FlatList
-        data={DATA}
-        renderItem={renderItem}
-        keyExtractor={myKeyExtractor}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
+        data={transactions}
+        keyExtractor={item => item.txId}
+        renderItem={({item}) => <Item data={item} navigator={navigation} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+        ListEmptyComponent={<Text>{error ? '' : 'No transactions yet.'}</Text>}
       />
     </View>
   );
