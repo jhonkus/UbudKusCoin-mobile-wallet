@@ -112,7 +112,7 @@ export const NewWallet = ({navigation}: NewWalletProps) => {
             style={[styles.btn, styles.btnNew]}
             onPress={() => {
               WalletSession.beginSetup(words);
-              navigation.navigate('Pin');
+              navigation.navigate('BackupQuiz', {mnemonic: words});
             }}>
             <Text style={styles.btnLabel}>Continue</Text>
           </TouchableOpacity>

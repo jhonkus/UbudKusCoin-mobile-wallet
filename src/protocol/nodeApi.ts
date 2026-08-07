@@ -110,3 +110,24 @@ export async function broadcastTransaction(nodeRpcUrl: string, txBytes: Uint8Arr
   if (!result || typeof result.code !== 'number') throw new Error('Node RPC returned an invalid response.');
   return {code: result.code, hash: result.hash, log: result.log};
 }
+
+export interface NodeHealth {
+  ready: boolean;
+  consensusReady: boolean;
+  consensusEngine: string;
+  consensusMessage: string;
+}
+
+export async function getHealthReady(apiBaseUrl: string): Promise<NodeHealth> {
+  const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/health/ready`);
+  if (!response.ok) {
+    return {
+      ready: false,
+      consensusReady: false,
+      consensusEngine: 'unknown',
+      consensusMessage: `Node returned HTTP ${response.status}`,
+    };
+  }
+  return response.json();
+}
+

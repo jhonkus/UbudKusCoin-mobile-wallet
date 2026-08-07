@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {View, Text, FlatList, TouchableOpacity, ActivityIndicator} from 'react-native';
-import {UKC_API_BASE_URL, UKC_NODE_RPC_URL} from '../../../constants';
-import {broadcastTransaction, createSignedTransfer, getAccount, getNetwork, parseAmount, walletAddressFromMnemonic, SignedTransfer} from '../../../protocol';
+import {broadcastTransaction, createSignedTransfer, formatBaseUnits, getAccount, getNetwork, parseAmount, walletAddressFromMnemonic, SignedTransfer} from '../../../protocol';
 import styleSheet from './style';
 import {WalletSession} from '../../../wallet/WalletSession';
 
@@ -13,6 +12,9 @@ export const SendConfirmation = ({navigation, route}: any) => {
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
 
+  const apiBaseUrl = WalletSession.getApiBaseUrl();
+  const nodeRpcUrl = WalletSession.getNodeRpcUrl();
+
   useEffect(() => {
     let active = true;
     const prepare = async () => {
@@ -20,18 +22,15 @@ export const SendConfirmation = ({navigation, route}: any) => {
         if (!mnemonic) throw new Error('Wallet seed is not loaded.');
         const sender = walletAddressFromMnemonic(mnemonic);
         const [network, account] = await Promise.all([
-          getNetwork(UKC_API_BASE_URL),
-          getAccount(UKC_API_BASE_URL, sender),
+          getNetwork(apiBaseUrl),
+          getAccount(apiBaseUrl, sender),
         ]);
         const amountBaseUnits = parseAmount(amount);
         const feeBaseUnits = parseAmount(fee);
         if (amountBaseUnits + feeBaseUnits > BigInt(account.balanceBaseUnits)) {
           throw new Error('Insufficient balance for amount and fee.');
         }
-        // The node API returns the current account nonce (next-sequence number)
-        // directly, so use it as-is. Adding 1 here would over-increment and cause
-        // the transaction to fail or be replayed at the wrong sequence.
-        const nonce = BigInt(account.nonce);
+        const nonce = BigInt(account.nonce) + 1n;
         const signed = createSignedTransfer({
           mnemonic,
           to: recipient,
@@ -48,13 +47,13 @@ export const SendConfirmation = ({navigation, route}: any) => {
     };
     prepare();
     return () => { active = false; };
-  }, [mnemonic, recipient, amount, fee]);
+  }, [mnemonic, recipient, amount, fee, apiBaseUrl]);
 
   const submit = async () => {
     if (!transfer || sending) return;
     setSending(true);
     try {
-      const result = await broadcastTransaction(UKC_NODE_RPC_URL, transfer.bytes);
+      const result = await broadcastTransaction(nodeRpcUrl, transfer.bytes);
       if (result.code !== 0) throw new Error(result.log || `Node rejected transaction (${result.code}).`);
       navigation.replace('SendSuccess', {txId: transfer.txId});
     } catch (submitError: any) {
@@ -66,15 +65,15 @@ export const SendConfirmation = ({navigation, route}: any) => {
   const rows = transfer ? [
     {label: 'From', id: 'from', value: transfer.sender},
     {label: 'To', id: 'to', value: transfer.recipient},
-    {label: 'Amount', id: 'amount', value: `${transfer.amountBaseUnits.toString()} base units`},
-    {label: 'Fee', id: 'fee', value: `${transfer.feeBaseUnits.toString()} base units`},
-    {label: 'Nonce', id: 'nonce', value: transfer.nonce.toString()},
+    {label: 'Amount', id: 'amount', value: `${formatBaseUnits(transfer.amountBaseUnits.toString())} UKC`},
+    {label: 'Fee', id: 'fee', value: `${formatBaseUnits(transfer.feeBaseUnits.toString())} UKC`},
+    {label: 'Sequence / Nonce', id: 'nonce', value: transfer.nonce.toString()},
   ] : [];
 
   return (
     <View style={styles.container}>
       {!transfer && !error && <ActivityIndicator />}
-      {error ? <Text>{error}</Text> : <FlatList data={rows} renderItem={({item}) => <View style={styles.rowDtl}><Text style={styles.itemLabel}>{item.label}</Text><Text style={styles.itemValue}>{item.value}</Text></View>} keyExtractor={item => item.id} />}
+      {error ? <Text style={{color: 'red', margin: 16}}>{error}</Text> : <FlatList data={rows} renderItem={({item}) => <View style={styles.rowDtl}><Text style={styles.itemLabel}>{item.label}</Text><Text style={styles.itemValue}>{item.value}</Text></View>} keyExtractor={item => item.id} />}
       <View style={styles.btnBox}>
         <TouchableOpacity style={styles.btnContinue} disabled={!transfer || sending} onPress={submit}>
           <Text style={styles.txtContinue}>{sending ? 'Sending...' : 'Sign and Send'}</Text>
@@ -83,3 +82,4 @@ export const SendConfirmation = ({navigation, route}: any) => {
     </View>
   );
 };
+

@@ -117,4 +117,24 @@ describe('WalletSession', () => {
       expect(WalletSession.unlock(expectedDigest)).toBe(false);
     });
   });
+
+  describe('Address Book & Network Settings', () => {
+    test('manages network endpoints', () => {
+      expect(WalletSession.getApiBaseUrl()).toContain('http');
+      expect(WalletSession.getNodeRpcUrl()).toContain('http');
+      WalletSession.setNetworkUrls('http://custom-node:5100', 'http://custom-node:26657');
+      expect(WalletSession.getApiBaseUrl()).toBe('http://custom-node:5100');
+      expect(WalletSession.getNodeRpcUrl()).toBe('http://custom-node:26657');
+    });
+
+    test('adds and removes contacts', () => {
+      expect(WalletSession.getContacts()).toHaveLength(0);
+      const contact = WalletSession.addContact('Alice', '12345');
+      expect(WalletSession.getContacts()).toHaveLength(1);
+      expect(WalletSession.getContacts()[0].name).toBe('Alice');
+      WalletSession.removeContact(contact.id);
+      expect(WalletSession.getContacts()).toHaveLength(0);
+    });
+  });
 });
+

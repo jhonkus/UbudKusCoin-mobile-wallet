@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ethersproject/shims": "^5.8.0",
+    "@react-native-async-storage/async-storage": "^3.1.1",
     "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
@@ -25,18 +26,18 @@
     "react-native-screens": "^4.26.2",
     "react-native-size-matters": "^0.4.2",
     "react-native-svg": "^15.15.5",
-    "react-native-vision-camera": "^7.5.0"
+    "react-native-vision-camera": "^4.5.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
     "@babel/runtime": "^7.29.7",
+    "@react-native-community/cli": "^20.2.0",
+    "@react-native-community/cli-platform-android": "^20.2.0",
+    "@react-native-community/cli-platform-ios": "^20.2.0",
     "@react-native/babel-preset": "0.86.2",
     "@react-native/eslint-config": "0.86.2",
     "@react-native/jest-preset": "0.86.2",
     "@react-native/metro-config": "0.86.2",
-    "@react-native-community/cli": "^20.2.0",
-    "@react-native-community/cli-platform-android": "^20.2.0",
-    "@react-native-community/cli-platform-ios": "^20.2.0",
     "@types/assert": "^1.5.6",
     "@types/babel__core": "^7.1.17",
     "@types/events": "^1.2.0",
@@ -52,10 +53,19 @@
   },
   "jest": {
     "preset": "@react-native/jest-preset",
-    "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
-    "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|@react-navigation|react-native-size-matters|react-native-qrcode-svg)/)"
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
     ],
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"]
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community|-async-storage)?|@react-navigation|react-native-size-matters|react-native-qrcode-svg)/)"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
   }
 }
