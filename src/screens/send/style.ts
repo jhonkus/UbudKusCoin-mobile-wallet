@@ -57,6 +57,10 @@ const styleSheet = () =>
       justifyContent: 'center',
       alignItems: 'center',
     },
+    errorText: {
+      color: 'red',
+      margin: 8,
+    },
   });
 
 export default styleSheet;

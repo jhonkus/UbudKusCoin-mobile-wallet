@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {Text, FlatList, View, Image, TouchableOpacity, RefreshControl} from 'react-native';
+import {Text, FlatList, View, Image, TouchableOpacity, Pressable, RefreshControl} from 'react-native';
 import IMAGES from '../../../assets';
 import {UKC_API_BASE_URL} from '../../constants';
 import {formatBaseUnits, getAccount, getTransactions, TransactionSummary, walletAddressFromMnemonic} from '../../protocol';
@@ -59,7 +59,17 @@ export const Dashboard = ({navigation}: any) => {
         data={transactions}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         ListEmptyComponent={<Text>{error ? '' : 'No transactions yet.'}</Text>}
-        renderItem={({item}) => <View style={styles.row}><View style={styles.colLeft}><Text style={styles.itemAddress}>{item.txId}</Text><Text style={styles.itemDate}>Block {item.height}</Text></View><View style={styles.colRight}><Text style={styles.itemAmmount}>{formatBaseUnits(item.amountBaseUnits)} UKC</Text></View></View>}
+        renderItem={({item}) => (
+          <Pressable style={styles.row} onPress={() => navigation.navigate('TransactionDetail', {tx: item})}>
+            <View style={styles.colLeft}>
+              <Text style={styles.itemAddress}>{item.txId}</Text>
+              <Text style={styles.itemDate}>Block {item.height}</Text>
+            </View>
+            <View style={styles.colRight}>
+              <Text style={styles.itemAmmount}>{formatBaseUnits(item.amountBaseUnits)} UKC</Text>
+            </View>
+          </Pressable>
+        )}
         keyExtractor={item => item.txId}
       />
     </View>

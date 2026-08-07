@@ -28,7 +28,10 @@ export const SendConfirmation = ({navigation, route}: any) => {
         if (amountBaseUnits + feeBaseUnits > BigInt(account.balanceBaseUnits)) {
           throw new Error('Insufficient balance for amount and fee.');
         }
-        const nonce = BigInt(account.nonce) + 1n;
+        // The node API returns the current account nonce (next-sequence number)
+        // directly, so use it as-is. Adding 1 here would over-increment and cause
+        // the transaction to fail or be replayed at the wrong sequence.
+        const nonce = BigInt(account.nonce);
         const signed = createSignedTransfer({
           mnemonic,
           to: recipient,

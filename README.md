@@ -1,5 +1,26 @@
 UbudKusCoin Mobile Wallet
 
+## About this app
+
+UbudKusCoin Mobile Wallet is the official mobile wallet for UbudKusCoin (UKC), a
+purpose-built blockchain used by the UbudKus community in Bali, Indonesia as a
+local digital currency. This React Native app lets users hold and transact UKC
+directly on the UKC testnet from their mobile device.
+
+Key capabilities:
+
+- Create a new wallet from a generated BIP-39 seed phrase or open an existing
+  wallet, protected by a 6-digit PIN.
+- View the account balance and live transaction history on the dashboard.
+- Send UKC to another UKC address, with amount/fee validation and an on-device
+  signature using the canonical UKC (KTX2) transaction envelope.
+- Receive UKC by sharing the wallet address.
+- Scan a UKC address from a QR code to pre-fill the send form.
+- Review full details and on-chain status of any transaction.
+
+The app is under active development and currently targets the UKC testnet. It
+integrates directly with the UKC protocol and node API rather than depending on
+a third-party wallet backend.
 
 #How to install:
 
@@ -40,7 +61,7 @@ node API, and submits the bytes through CometBFT `broadcast_tx_sync`.
 
 For the local Android emulator, the defaults are:
 
-- API: `http://10.0.2.2:5001`
+- API: `http://10.0.2.2:5100`
 - CometBFT RPC: `http://10.0.2.2:26657`
 
 These HTTP defaults are development-only. A real deployment must use HTTPS,
@@ -49,6 +70,32 @@ CometBFT RPC directly to the public internet. The current wallet still keeps
 the seed in a locked in-memory session for this integration phase; it is no
 longer stored in Redux or navigation state. Secure OS-backed seed storage is
 still required before a production release.
+
+## QR code scanner
+
+The Scan screen uses `react-native-vision-camera` to scan UKC addresses from QR
+codes. Camera permission is requested on first use; when a valid address is
+decoded it is pre-filled into the Send screen. On iOS the
+`NSCameraUsageDescription` string is already declared in `Info.plist`.
+
+## Security notes
+
+- The app auto-locks the wallet session when it enters the background and
+  prompts for the PIN on return to the foreground.
+- PIN verification uses a constant-time comparison to reduce timing side
+  channels.
+- The seed phrase is kept only in a locked in-memory session and is never stored
+  in Redux or navigation state (the legacy Redux layer has been removed).
+
+## Tests
+
+Jest is used for unit tests. Run them with:
+
+- yarn test
+
+Coverage includes the `WalletSession` lifecycle (setup, unlock, lock, constant
+time comparison) and the `react-native-vision-camera` module is mocked so the
+test suite runs without a camera device.
 
 
 

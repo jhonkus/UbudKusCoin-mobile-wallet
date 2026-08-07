@@ -1,3 +1,10 @@
+/* eslint-disable no-bitwise */
+/**
+ * UKC transaction protocol implementation.
+ *
+ * Binary encoding, hashing, and cryptographic helpers — bitwise operations
+ * are intentional and required for byte-level serialization.
+ */
 import {ethers} from 'ethers';
 
 export const UKC_BASE_UNITS = 100000000n;
