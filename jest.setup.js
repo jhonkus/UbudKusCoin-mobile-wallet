@@ -1,11 +1,12 @@
 /* eslint-env jest */
+
+// ─── Clipboard mock ──────────────────────────────────────────────────────────
 jest.mock('@react-native-clipboard/clipboard', () => ({
   setString: jest.fn(),
   getString: jest.fn(async () => ''),
 }));
-// Mock react-native-vision-camera before any screen that imports it is loaded.
-// Uses {virtual: true} so the mock works even when the package isn't installed
-// in node_modules (e.g. before `yarn install` is run after adding the dep).
+
+// ─── Vision Camera mock ──────────────────────────────────────────────────────
 jest.mock(
   'react-native-vision-camera',
   () => ({
@@ -17,14 +18,29 @@ jest.mock(
   {virtual: true},
 );
 
-jest.mock('@react-native-async-storage/async-storage', () => {
-  const store = new Map();
-  return {
-    getItem: jest.fn(async (key) => store.get(key) ?? null),
-    setItem: jest.fn(async (key, val) => store.set(key, String(val))),
-    removeItem: jest.fn(async (key) => store.delete(key)),
-    clear: jest.fn(async () => store.clear()),
-  };
+// ─── AsyncStorage mock ───────────────────────────────────────────────────────
+// Variable must be prefixed with "mock" to satisfy Jest's out-of-scope variable rule.
+const mockAsyncStorageMap = new Map();
+
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(async (key) => mockAsyncStorageMap.get(key) ?? null),
+  setItem: jest.fn(async (key, val) => mockAsyncStorageMap.set(key, String(val))),
+  removeItem: jest.fn(async (key) => mockAsyncStorageMap.delete(key)),
+  clear: jest.fn(async () => mockAsyncStorageMap.clear()),
+}));
+
+// ─── Global fetch stub (tests that need fetch must set their own mock) ────────
+if (!global.fetch) {
+  global.fetch = jest.fn();
+}
+
+// ─── Reset between every test ────────────────────────────────────────────────
+beforeEach(async () => {
+  mockAsyncStorageMap.clear();
+
+  const AsyncStorage = require('@react-native-async-storage/async-storage');
+  AsyncStorage.getItem.mockImplementation(async (key) => mockAsyncStorageMap.get(key) ?? null);
+  AsyncStorage.setItem.mockImplementation(async (key, val) => mockAsyncStorageMap.set(key, String(val)));
+  AsyncStorage.removeItem.mockImplementation(async (key) => mockAsyncStorageMap.delete(key));
+  AsyncStorage.clear.mockImplementation(async () => mockAsyncStorageMap.clear());
 });
-
-
