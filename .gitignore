@@ -62,3 +62,9 @@ buck-out/
 .watchman*
 
 .hprof
+
+# Local secrets / tokens
+tkn.txt
+
+# Temporary landing page (deployed separately to gh-pages)
+/landing/
